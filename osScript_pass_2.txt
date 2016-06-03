@@ -1,0 +1,30 @@
+#
+# Last few things needed to finish up OS configuration.
+#
+# move ceds home directory to user SD card
+#
+sudo adduser ceds --gecos "CEDS Project,LBNL-PSL,," --disabled-password
+echo 'ceds:!ForCEDS' | sudo chpasswd
+sudo adduser ceds sudo
+sudo usermod -m -d /media/home/ceds ceds
+#
+# add /media/home/gateway directory to hold gateway executables
+#
+sudo mkdir /media/home/gateway
+sudo chown ceds:ceds /media/home/gateway
+sudo chmod 755 /media/home/gateway
+#
+sudo mkdir /media/home/gateway/bin
+sudo chown ceds:ceds /media/home/gateway/bin
+sudo chmod 755 /media/home/gateway/bin
+#
+sudo mkdir /media/home/gateway/lib
+sudo chown ceds:ceds /media/home/gateway/lib
+sudo chmod 755 /media/home/gateway/lib
+#
+#
+# Disable password for debian account.  Have left it for the
+# very end just in case earlier errors required corrections.
+#
+sudo passwd -d debian
+#

@@ -1,0 +1,57 @@
+sudo connmanctl services
+sudo connmanctl config etherent-xxx-cable --ipv4 manual 192.168.11.31 255.255.255.0 192.168.11.1
+sudo connmanctl config --timservers time-c.nist.gov
+sudo connmanctl config --nameservers 64.81.79.2 216.231.41.2
+#
+# apt-get operations: update and install needed packages
+#
+sudo apt-get update
+sudo apt-get --assume-yes install zip cmake libpqxx-dev postgresql
+sudo apt-get --assume-yes install libboost-all-dev libcurl4-openssl-dev 
+sudo apt-get --assume-yes install libuv-dev gdb libprotobuf-dev liblog4cpp5-dev
+# 
+# get rid of apache - same space and will use node.js for web services anyway
+#
+sudo service apache2 stop
+sudo apt-get --assume-yes purge apache2 apache2-mpm-worker apache2-utils apache2.2-bin apache2.2-common
+sudo apt-get --assume-yes autoremove #get rid of no-longer needed dependencies
+#
+# set time zone
+#
+sudo cp /usr/share/zoneinfo/America/Los_Angeles /etc/localtime
+#
+# create needed directories under /home/distributions and
+# populate them as needed
+#
+sudo mkdir /home/distributions
+sudo mkdir /home/distributions/gateway
+#
+# create needed txt file for creating user SD card later
+#
+echo "mmcdev=1" | sudo tee /home/distributions/gateway/uEnv.txt
+echo "bootpart=1:2" | sudo tee -a /home/distributions/gateway/uEnv.txt
+echo "mmcroot=/dev/mmcblk1p2 ro" | sudo tee -a /home/distributions/gateway/uEnv.txt
+echo "optargs=quiet" | sudo tee -a /home/distributions/gateway/uEnv.txt
+sudo chown -R debian:debian /home/distributions/gateway
+sudo chmod 755 /home/distributions/gateway/uEnv.txt
+#
+# Latest cassandra c++ driver is not in package form, this directory
+# will contain built driver and includes
+#
+sudo mkdir /home/distributions/cassandra
+sudo mkdir /home/distributions/cassandra/datastax-cpp-driver
+# TODO download driver and unzip to datastax-cpp-driver directory
+sudo mkdir /home/distributions/cassandra/datastax-cpp-driver/include
+sudo mkdir /home/distributions/cassandra/datastax-cpp-driver/build
+sudo chown -R ceds:ceds /home/distributions/cassandra
+sudo chmod -R 755 /home/distributions/cassandra
+# TODO build the datastax driver
+#
+# make logging directory for upmugateway application
+#
+sudo mkdir /var/log/upmugateway
+sudo chmod 777 /var/log/upmugateway
+# 
+# Done for now....additional os patches needed after user SD disk is created,
+# installed and mounted.
+#

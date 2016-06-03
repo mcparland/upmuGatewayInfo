@@ -1,0 +1,89 @@
+# CAUTION:
+# Some of these commands alter OS files.  If you only want
+# create a spare SD user disk, comment out the lines that appear
+# after #************* OS altering commands ****************
+# below.
+#
+#
+# Create the partitions programatically (rather than manually)
+# we're going to simulate the manual input to fdisk
+# The sed script strips off all the comments so that we can 
+# document what we're doing in-line with the actual commands
+# Note that a blank line (commented as "default" will send a empty
+# line terminated with a newline to take the fdisk default.
+# This is what we're after (as displayed by the "fdisk p" command):
+#
+#Device         Boot   Start     End Sectors  Size Id Type
+#/dev/mmcblk0p1         2048   18499   16452    8M  c W95 FAT32 (LBA)
+#/dev/mmcblk0p2        20480 5271291 5250812  2.5G 83 Linux
+#/dev/mmcblk0p3      5271552 7744511 2472960  1.2G 83 Linux
+#
+sudo sed -e 's/\s*\([\+0-9a-zA-Z]*\).*/\1/' << EOF | sudo fdisk /dev/mmcblk0
+  o # clear the in memory partition table
+  n # new partition
+  p # primary partition
+  1 # partition number 1
+    # default - start at beginning of disk 
+  18499 # 8M parttion
+  n # new partition
+  p # primary partition
+  2 # partion number 2
+    # default, start immediately after preceding partition
+  5271291  # 2.6++ G partition for Postgres data
+  t # set partition type
+  2 # select partition
+  83 #linux
+  n # new partition
+  p # primary partition
+  3 # partion number 3
+    # default, start immediately after preceding partition
+    # default, extend partition to end of disk for use by ceds account
+  t # set partition type
+  3 # select partition
+  83 #linux
+  t # set partition type for partition 1 (out of order because of fdisk behavior)
+  1 # select partition
+  c # W95 FAT16
+  p # print the in-memory partition table
+  w # write the partition table
+  q # and we're done
+EOF
+#
+# Format each of the partitions in the appropriate way.
+#
+sudo mkdosfs -F 16 /dev/mmcblk0p1
+sudo mkfs.ext4 -F /dev/mmcblk0p2
+sudo mkfs.ext4 -F /dev/mmcblk0p3
+#
+# mount dos partition and copy the uBoot file uEnv.txt 
+# (created by earlier command script and left in the
+# directory /home/distributions/gateway) so BBB boot process
+# deals with it correctly.
+#
+sudo mount /dev/mmcblk0p1 /media
+sudo cp /home/distributions/gateway/uEnv.txt /media
+sudo umount /media
+#
+#************* OS altering commands ****************
+#
+# make mount points for the partitions at boot time.
+# note: these names are important because they are used
+# for the new ceds account home directory and the data 
+# storage location for postgres.
+#
+sudo mkdir /media/home
+sudo mkdir /media/var
+sudo mount /dev/mmcblk0p3 /media/var
+sudo mkdir /media/var/lib
+sudo umount /media/var
+# 
+# add these partitions and directories to this systems's
+# fstab so they get properly mounted at boot time. Note:
+# we do not need to mount the dos partition.
+#
+echo "/dev/mmcblk0p2 /media/home ext4 defaults 0 2" | sudo tee -a /etc/fstab
+echo "/dev/mmcblk0p3 /media/var ext4 defaults 0 2" | sudo tee -a /etc/fstab
+#
+# We now have a valid, non-bootable SD user disk and a debian
+# system that expects to see it at boot time.  ceds account
+# and postgres still need to be pointed to this disk.
